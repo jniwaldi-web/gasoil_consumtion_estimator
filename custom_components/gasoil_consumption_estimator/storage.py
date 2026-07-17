@@ -14,8 +14,11 @@ from .const import (
     DATA_ACTIVE_RATIO,
     DATA_INITIAL_RATIO,
     DATA_READINGS,
+    DEFAULT_METER_ROLLOVER,
+    READING_CUMULATIVE,
     READING_ENERGY,
     READING_FUEL,
+    READING_RAW,
     READING_TIMESTAMP,
     STORAGE_KEY_PREFIX,
     STORAGE_VERSION,
@@ -60,8 +63,25 @@ class GasoilStore:
                     DATA_INITIAL_RATIO, self._initial_ratio
                 ),
             }
+            self._migrate_readings()
         self._sort_readings()
         return self._data
+
+    def _migrate_readings(self) -> None:
+        """Migrate v1 readings (fuel_liters only) to v2 (raw + cumulative).
+
+        Old readings stored a single ``fuel_liters`` value. Treat it as both the
+        raw meter value and the cumulative total so calibration keeps working.
+        """
+        for reading in self._data.get(DATA_READINGS, []):
+            if READING_RAW not in reading or READING_CUMULATIVE not in reading:
+                base = reading.get(
+                    READING_FUEL,
+                    reading.get(READING_RAW, reading.get(READING_CUMULATIVE, 0.0)),
+                )
+                base = float(base)
+                reading.setdefault(READING_RAW, base)
+                reading.setdefault(READING_CUMULATIVE, base)
 
     async def async_save(self, data: dict[str, Any] | None = None) -> None:
         """Persist the current (or provided) data to disk."""
@@ -109,17 +129,30 @@ class GasoilStore:
         return readings[-1]
 
     async def add_reading(
-        self, timestamp: datetime, fuel_liters: float, energy_kwh: float
+        self,
+        timestamp: datetime,
+        raw_liters: float,
+        energy_kwh: float,
+        meter_rollover: float = DEFAULT_METER_ROLLOVER,
     ) -> None:
         """Insert or replace a reading, recalibrate and persist.
 
-        If a reading with the same ISO timestamp already exists it is replaced,
-        otherwise the new reading is inserted and the list re-sorted.
+        ``raw_liters`` is the value shown by the physical meter (0..rollover-1).
+        The real cumulative total is derived using rollover-aware deltas so it
+        stays monotonically increasing across meter resets. If a reading with
+        the same ISO timestamp already exists it is replaced.
         """
         iso = timestamp.astimezone(dt_util.UTC).isoformat()
+        raw = float(raw_liters)
+
+        # Cumulative is provisional here; it is recomputed for the whole ordered
+        # list below so out-of-order (historical) inserts stay correct.
         reading = {
             READING_TIMESTAMP: iso,
-            READING_FUEL: float(fuel_liters),
+            READING_RAW: raw,
+            READING_CUMULATIVE: raw,
+            # Keep fuel_liters mirroring cumulative for backwards compatibility.
+            READING_FUEL: raw,
             READING_ENERGY: float(energy_kwh),
         }
 
@@ -133,8 +166,45 @@ class GasoilStore:
 
         self._data[DATA_READINGS] = readings
         self._sort_readings()
+        self._recompute_cumulatives(meter_rollover)
         self.recalculate_ratio()
         await self.async_save()
+
+    def _recompute_cumulatives(self, meter_rollover: float) -> None:
+        """Recompute cumulative totals for all readings in timestamp order.
+
+        Walks the sorted list from the first reading so that inserting a reading
+        with a past timestamp still yields a monotonic cumulative total:
+        - readings[0].cumulative = readings[0].raw
+        - readings[i].cumulative = readings[i-1].cumulative
+              + _rollover_delta(readings[i-1].raw, readings[i].raw, modulus)
+        """
+        readings = self.readings
+        prev_raw: float | None = None
+        prev_cumulative = 0.0
+        for reading in readings:
+            raw = float(reading[READING_RAW])
+            if prev_raw is None:
+                cumulative = raw
+            else:
+                cumulative = prev_cumulative + self._rollover_delta(
+                    prev_raw, raw, meter_rollover
+                )
+            reading[READING_CUMULATIVE] = cumulative
+            reading[READING_FUEL] = cumulative
+            prev_raw = raw
+            prev_cumulative = cumulative
+
+    @staticmethod
+    def _rollover_delta(prev: float, cur: float, modulus: float) -> float:
+        """Return the consumed delta between two meter displays, handling reset.
+
+        If ``cur >= prev`` the meter did not wrap: delta = cur - prev.
+        Otherwise it rolled over: delta = (modulus - prev) + cur.
+        """
+        if cur >= prev:
+            return cur - prev
+        return (modulus - prev) + cur
 
     def recalculate_ratio(self) -> float:
         """Recalculate the active ratio as a weighted average over segments.
@@ -151,7 +221,7 @@ class GasoilStore:
         total_fuel_delta = 0.0
         total_energy_delta = 0.0
         for previous, current in zip(readings, readings[1:]):
-            fuel_delta = current[READING_FUEL] - previous[READING_FUEL]
+            fuel_delta = current[READING_CUMULATIVE] - previous[READING_CUMULATIVE]
             energy_delta = current[READING_ENERGY] - previous[READING_ENERGY]
             if fuel_delta > 0 and energy_delta > 0:
                 total_fuel_delta += fuel_delta

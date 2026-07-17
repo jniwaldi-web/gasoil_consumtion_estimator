@@ -20,15 +20,20 @@ from .const import (
     ATTR_ESTIMATED_REMAINING,
     ATTR_ESTIMATED_SINCE_LAST,
     ATTR_ESTIMATED_TOTAL,
+    ATTR_LAST_CUMULATIVE,
     ATTR_LAST_FUEL,
+    ATTR_LAST_RAW,
     ATTR_LAST_TIMESTAMP,
     CONF_ENERGY_SENSOR,
     CONF_INITIAL_RATIO,
+    CONF_METER_ROLLOVER,
     CONF_TANK_CAPACITY,
     DEFAULT_INITIAL_RATIO,
+    DEFAULT_METER_ROLLOVER,
     DOMAIN,
+    READING_CUMULATIVE,
     READING_ENERGY,
-    READING_FUEL,
+    READING_RAW,
     READING_TIMESTAMP,
     UPDATE_INTERVAL,
 )
@@ -78,6 +83,16 @@ class GasoilCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except (TypeError, ValueError):
             return None
 
+    @property
+    def meter_rollover(self) -> float:
+        """Return the meter rollover modulus (display wraps back to 0 at it)."""
+        value = _get_option(self.entry, CONF_METER_ROLLOVER, DEFAULT_METER_ROLLOVER)
+        try:
+            rollover = float(value)
+        except (TypeError, ValueError):
+            return float(DEFAULT_METER_ROLLOVER)
+        return rollover if rollover > 0 else float(DEFAULT_METER_ROLLOVER)
+
     async def async_load(self) -> None:
         """Load persisted data from disk."""
         await self.store.async_load()
@@ -112,27 +127,33 @@ class GasoilCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         active_ratio = self.store.active_ratio
 
         if last is not None:
-            last_fuel = float(last[READING_FUEL])
+            last_cumulative = float(last[READING_CUMULATIVE])
+            last_raw = float(last[READING_RAW])
             last_energy = float(last[READING_ENERGY])
             last_timestamp = last[READING_TIMESTAMP]
         else:
-            last_fuel = 0.0
+            last_cumulative = 0.0
+            last_raw = 0.0
             last_energy = current_energy if current_energy is not None else 0.0
             last_timestamp = None
 
         if current_energy is None:
-            # No prior estimate and no reading: report the last known fuel.
-            estimated_total = last_fuel
+            # No prior estimate and no reading: report the last known total.
+            estimated_total = last_cumulative
         else:
-            estimated_total = last_fuel + (current_energy - last_energy) * active_ratio
+            estimated_total = (
+                last_cumulative + (current_energy - last_energy) * active_ratio
+            )
 
-        since_last = estimated_total - last_fuel
+        since_last = estimated_total - last_cumulative
 
         data: dict[str, Any] = {
             ATTR_ESTIMATED_TOTAL: round(estimated_total, 3),
             ATTR_ESTIMATED_SINCE_LAST: round(since_last, 3),
             ATTR_ACTIVE_RATIO: round(active_ratio, 6),
-            ATTR_LAST_FUEL: round(last_fuel, 3),
+            ATTR_LAST_FUEL: round(last_cumulative, 3),
+            ATTR_LAST_RAW: round(last_raw, 3),
+            ATTR_LAST_CUMULATIVE: round(last_cumulative, 3),
             ATTR_LAST_TIMESTAMP: last_timestamp,
             ATTR_CURRENT_ENERGY: (
                 round(current_energy, 3) if current_energy is not None else None
@@ -306,7 +327,7 @@ class GasoilCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             else:
                 energy = await self._async_resolve_energy_at(when)
 
-        await self.store.add_reading(when, liters, energy)
+        await self.store.add_reading(when, liters, energy, self.meter_rollover)
         await self.async_request_refresh()
 
     async def reset_calibration(self) -> None:

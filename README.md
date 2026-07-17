@@ -145,6 +145,33 @@ porcentaje = restante / capacidad × 100
 
 Mientras no haya al menos 2 lecturas, se emplea el **ratio inicial** configurado.
 
+---
+
+## Contador que se reinicia cada 9999 litros
+
+Muchos contadores mecánicos de gasoil tienen solo **4 dígitos**: cuentan de
+`0` a `9999` y, al llegar al máximo, **vuelven a `0`**. Si simplemente restaras
+la lectura nueva de la anterior, un reinicio daría un consumo negativo y rompería
+la calibración.
+
+Para gestionarlo, la integración expone el campo **«Reinicio del contador (L)»**
+(`meter_rollover`, por defecto `10000`), que indica el módulo en el que el
+display vuelve a cero (el contador va de 0 a 9999 inclusive y salta a 0, por eso
+el módulo es 10000).
+
+- Tú sigues introduciendo **siempre el valor que marca el medidor** (0–9999).
+- La integración calcula el consumo real con matemática de rollover:
+  - si `actual ≥ anterior`: `delta = actual − anterior`
+  - si `actual < anterior` (hubo reinicio): `delta = (módulo − anterior) + actual`
+- Con esos deltas mantiene un **total acumulado real monotónico** que puede
+  superar 9999. Ese total es el que usan la estimación y el sensor
+  **«Gasoil total medido»** (`total_gasoil_measured`), mientras que el sensor
+  **«Última lectura manual de gasoil»** muestra el valor tal cual marca el
+  medidor (0–9999).
+
+Si tu contador no se reinicia (es de más dígitos), deja `meter_rollover` en un
+valor muy alto o simplemente no llegarás nunca al reinicio.
+
 ### Resolución de energía histórica
 
 Si registras una lectura con fecha pasada, la integración obtiene el valor del
@@ -166,3 +193,55 @@ falla con un error explicativo en español.
   Assistant) y sobreviven a reinicios.
 - La estimación es una **aproximación**: depende de que la relación
   electricidad↔gasoil de tu caldera sea razonablemente estable.
+
+---
+
+## Tarjeta Lovelace (`custom:gasoil-card`)
+
+La integración incluye una tarjeta personalizada (`gasoil-card.js`) que muestra
+todas las estadísticas en una rejilla y ofrece un formulario para **añadir
+lecturas manuales** directamente desde el panel.
+
+### Instalación de la tarjeta
+
+**Opción A — manual:**
+
+1. Copia `gasoil-card.js` a la carpeta `config/www/` de Home Assistant
+   (créala si no existe). Quedará accesible en `/local/gasoil-card.js`.
+2. Ve a *Ajustes → Paneles de control → Recursos → Añadir recurso*.
+   - URL: `/local/gasoil-card.js`
+   - Tipo: **Módulo JavaScript**
+3. Recarga la interfaz (Ctrl/Cmd + F5).
+
+**Opción B — HACS (Frontend):** añade el repositorio como *Frontend / módulo*,
+instálalo y HACS registrará el recurso automáticamente.
+
+### Uso
+
+Añade una tarjeta manual (*Editar panel → Añadir tarjeta → Manual*) con este
+YAML. Los `entity_id` deben coincidir con los que crea la integración; siguen el
+patrón `sensor.<nombre_instancia>_<clave_sensor>`. Puedes copiar los `entity_id`
+reales desde *Herramientas de desarrollo → Estados*.
+
+```yaml
+type: custom:gasoil-card
+title: Consumo de gasoil
+consumed_entity: sensor.estimador_gasoil_estimated_gasoil_consumed
+since_last_entity: sensor.estimador_gasoil_estimated_gasoil_since_last_reading
+ratio_entity: sensor.estimador_gasoil_gasoil_liters_per_kwh
+last_reading_entity: sensor.estimador_gasoil_last_gasoil_manual_reading
+last_reading_time_entity: sensor.estimador_gasoil_last_gasoil_reading_time
+energy_entity: sensor.estimador_gasoil_current_energy_kwh
+total_measured_entity: sensor.estimador_gasoil_total_gasoil_measured
+# Solo si configuraste capacidad de depósito:
+remaining_entity: sensor.estimador_gasoil_estimated_gasoil_remaining
+percentage_entity: sensor.estimador_gasoil_estimated_tank_percentage
+# Opcional, solo si tienes varias instancias:
+# config_entry_id: xxxxxxxxxxxxxxxxxx
+```
+
+Solo se muestran las estadísticas cuyo `entity` esté configurado. En el
+formulario, el campo de litros corresponde **al valor que marca el medidor**
+(0–9999); si indicas fecha/hora, se envía en formato ISO 8601 con la zona
+horaria local. Al guardar verás un mensaje de éxito o el error devuelto por el
+servicio.

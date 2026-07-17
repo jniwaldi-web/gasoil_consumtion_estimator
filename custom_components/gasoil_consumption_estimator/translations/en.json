@@ -11,7 +11,8 @@
           "tank_capacity": "Tank capacity (L)",
           "initial_liters": "Initial meter reading (L)",
           "initial_timestamp": "Initial reading date/time",
-          "initial_ratio": "Initial ratio (L/kWh)"
+          "initial_ratio": "Initial ratio (L/kWh)",
+          "meter_rollover": "Meter rollover (L)"
         }
       }
     }
@@ -20,12 +21,13 @@
     "step": {
       "init": {
         "title": "Gasoil estimator options",
-        "description": "Adjust the energy sensor, name, tank capacity and initial ratio.",
+        "description": "Adjust the energy sensor, name, tank capacity, initial ratio and meter rollover.",
         "data": {
           "energy_sensor": "Energy sensor (kWh)",
           "name": "Instance name",
           "tank_capacity": "Tank capacity (L)",
-          "initial_ratio": "Initial ratio (L/kWh)"
+          "initial_ratio": "Initial ratio (L/kWh)",
+          "meter_rollover": "Meter rollover (L)"
         }
       }
     }
@@ -38,6 +40,7 @@
       "last_gasoil_manual_reading": { "name": "Last manual gasoil reading" },
       "last_gasoil_reading_time": { "name": "Last reading time" },
       "current_energy_kwh": { "name": "Current energy (kWh)" },
+      "total_gasoil_measured": { "name": "Total gasoil measured" },
       "estimated_gasoil_remaining": { "name": "Estimated gasoil remaining" },
       "estimated_tank_percentage": { "name": "Estimated tank percentage" }
     }

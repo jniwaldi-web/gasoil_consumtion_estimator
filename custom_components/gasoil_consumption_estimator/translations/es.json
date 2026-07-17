@@ -11,7 +11,8 @@
           "tank_capacity": "Capacidad del depósito (L)",
           "initial_liters": "Lectura inicial del contador (L)",
           "initial_timestamp": "Fecha/hora de la lectura inicial",
-          "initial_ratio": "Ratio inicial (L/kWh)"
+          "initial_ratio": "Ratio inicial (L/kWh)",
+          "meter_rollover": "Reinicio del contador (L)"
         }
       }
     }
@@ -20,12 +21,13 @@
     "step": {
       "init": {
         "title": "Opciones del estimador de gasoil",
-        "description": "Ajusta el sensor de energía, el nombre, la capacidad del depósito y el ratio inicial.",
+        "description": "Ajusta el sensor de energía, el nombre, la capacidad del depósito, el ratio inicial y el reinicio del contador.",
         "data": {
           "energy_sensor": "Sensor de energía (kWh)",
           "name": "Nombre de la instancia",
           "tank_capacity": "Capacidad del depósito (L)",
-          "initial_ratio": "Ratio inicial (L/kWh)"
+          "initial_ratio": "Ratio inicial (L/kWh)",
+          "meter_rollover": "Reinicio del contador (L)"
         }
       }
     }
@@ -38,6 +40,7 @@
       "last_gasoil_manual_reading": { "name": "Última lectura manual de gasoil" },
       "last_gasoil_reading_time": { "name": "Fecha de la última lectura" },
       "current_energy_kwh": { "name": "Energía actual (kWh)" },
+      "total_gasoil_measured": { "name": "Gasoil total medido" },
       "estimated_gasoil_remaining": { "name": "Gasoil restante estimado" },
       "estimated_tank_percentage": { "name": "Porcentaje estimado del depósito" }
     }

@@ -20,9 +20,11 @@ from .const import (
     CONF_INITIAL_LITERS,
     CONF_INITIAL_RATIO,
     CONF_INITIAL_TIMESTAMP,
+    CONF_METER_ROLLOVER,
     CONF_NAME,
     CONF_TANK_CAPACITY,
     DEFAULT_INITIAL_RATIO,
+    DEFAULT_METER_ROLLOVER,
     DEFAULT_NAME,
     DOMAIN,
 )
@@ -58,6 +60,18 @@ def _ratio_number_selector() -> selector.NumberSelector:
     )
 
 
+def _rollover_number_selector() -> selector.NumberSelector:
+    """Return a number selector for the meter rollover modulus."""
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=0,
+            step=1,
+            unit_of_measurement="L",
+            mode=selector.NumberSelectorMode.BOX,
+        )
+    )
+
+
 class GasoilConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle the initial configuration flow."""
 
@@ -84,6 +98,9 @@ class GasoilConfigFlow(ConfigFlow, domain=DOMAIN):
                 data[CONF_INITIAL_LITERS] = user_input[CONF_INITIAL_LITERS]
             if user_input.get(CONF_INITIAL_TIMESTAMP) not in (None, ""):
                 data[CONF_INITIAL_TIMESTAMP] = user_input[CONF_INITIAL_TIMESTAMP]
+            data[CONF_METER_ROLLOVER] = user_input.get(
+                CONF_METER_ROLLOVER, DEFAULT_METER_ROLLOVER
+            )
 
             return self.async_create_entry(title=name, data=data)
 
@@ -97,6 +114,9 @@ class GasoilConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Optional(
                     CONF_INITIAL_RATIO, default=DEFAULT_INITIAL_RATIO
                 ): _ratio_number_selector(),
+                vol.Optional(
+                    CONF_METER_ROLLOVER, default=DEFAULT_METER_ROLLOVER
+                ): _rollover_number_selector(),
             }
         )
 
@@ -134,6 +154,9 @@ class GasoilOptionsFlow(OptionsFlow):
             }
             if user_input.get(CONF_TANK_CAPACITY) not in (None, ""):
                 options[CONF_TANK_CAPACITY] = user_input[CONF_TANK_CAPACITY]
+            options[CONF_METER_ROLLOVER] = user_input.get(
+                CONF_METER_ROLLOVER, DEFAULT_METER_ROLLOVER
+            )
             return self.async_create_entry(title="", data=options)
 
         current = {**self.config_entry.data, **self.config_entry.options}
@@ -158,6 +181,14 @@ class GasoilOptionsFlow(OptionsFlow):
                     CONF_INITIAL_RATIO,
                     default=current.get(CONF_INITIAL_RATIO, DEFAULT_INITIAL_RATIO),
                 ): _ratio_number_selector(),
+                vol.Optional(
+                    CONF_METER_ROLLOVER,
+                    description={
+                        "suggested_value": current.get(
+                            CONF_METER_ROLLOVER, DEFAULT_METER_ROLLOVER
+                        )
+                    },
+                ): _rollover_number_selector(),
             }
         )
 
