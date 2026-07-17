@@ -24,6 +24,7 @@ from .const import (
     SERVICE_ADD_MANUAL_READING,
     SERVICE_RESET_CALIBRATION,
 )
+from .frontend import async_register_frontend 
 from .coordinator import GasoilCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -56,6 +57,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if coordinator.store.get_last_reading() is None:
         await _maybe_seed_initial_reading(hass, entry, coordinator)
 
+
+
+    await async_register_frontend(hass)
+ 
     await coordinator.async_config_entry_first_refresh()
 
     hass.data[DOMAIN][entry.entry_id] = coordinator

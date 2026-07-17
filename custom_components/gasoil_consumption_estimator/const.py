@@ -16,6 +16,11 @@ CONF_INITIAL_RATIO: Final = "initial_ratio"
 CONF_NAME: Final = "name"
 CONF_METER_ROLLOVER: Final = "meter_rollover"
 
+URL_BASE: Final = "/gasoil_consumption_estimator"
+CARD_FILENAME: Final = "gasoil-card.js"
+
+CARD_RESOURCE_URL: Final = f"{URL_BASE}/{CARD_FILENAME}"
+
 # Defaults
 DEFAULT_NAME: Final = "Estimador gasoil"
 DEFAULT_INITIAL_RATIO: Final = 0.1
