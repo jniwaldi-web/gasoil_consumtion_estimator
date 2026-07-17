@@ -1,0 +1,75 @@
+{
+  "title": "Gasoil Consumption Estimator",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure the gasoil estimator",
+        "description": "Select the cumulative energy sensor (kWh) of your boiler and, optionally, the initial tank data.",
+        "data": {
+          "energy_sensor": "Energy sensor (kWh)",
+          "name": "Instance name",
+          "tank_capacity": "Tank capacity (L)",
+          "initial_liters": "Initial meter reading (L)",
+          "initial_timestamp": "Initial reading date/time",
+          "initial_ratio": "Initial ratio (L/kWh)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Gasoil estimator options",
+        "description": "Adjust the energy sensor, name, tank capacity and initial ratio.",
+        "data": {
+          "energy_sensor": "Energy sensor (kWh)",
+          "name": "Instance name",
+          "tank_capacity": "Tank capacity (L)",
+          "initial_ratio": "Initial ratio (L/kWh)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "estimated_gasoil_consumed": { "name": "Estimated gasoil consumed" },
+      "estimated_gasoil_since_last_reading": { "name": "Estimated gasoil since last reading" },
+      "gasoil_liters_per_kwh": { "name": "Gasoil ratio (L/kWh)" },
+      "last_gasoil_manual_reading": { "name": "Last manual gasoil reading" },
+      "last_gasoil_reading_time": { "name": "Last reading time" },
+      "current_energy_kwh": { "name": "Current energy (kWh)" },
+      "estimated_gasoil_remaining": { "name": "Estimated gasoil remaining" },
+      "estimated_tank_percentage": { "name": "Estimated tank percentage" }
+    }
+  },
+  "services": {
+    "add_manual_reading": {
+      "name": "Add manual gasoil reading",
+      "description": "Records the liters shown by the gasoil meter at a given time and recalibrates the estimation.",
+      "fields": {
+        "liters": {
+          "name": "Liters",
+          "description": "Total cumulative liters shown by the gasoil meter."
+        },
+        "timestamp": {
+          "name": "Date and time",
+          "description": "Time of the reading. If omitted, the current time is used. If in the past, the energy sensor history is queried."
+        },
+        "config_entry_id": {
+          "name": "Instance",
+          "description": "Estimator instance. Optional if only one is configured."
+        }
+      }
+    },
+    "reset_calibration": {
+      "name": "Reset calibration",
+      "description": "Clears all manual readings and resets the ratio to the initial value.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Instance",
+          "description": "Estimator instance to reset. Optional if only one is configured."
+        }
+      }
+    }
+  }
+}

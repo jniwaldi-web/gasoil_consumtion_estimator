@@ -1,0 +1,49 @@
+add_manual_reading:
+  name: Añadir lectura manual de gasoil
+  description: >-
+    Registra los litros que marca el contador de gasoil en un momento dado y
+    recalibra la estimación. Si indicas una fecha/hora pasada, el valor del
+    sensor de energía se resuelve automáticamente desde el historial.
+  fields:
+    liters:
+      name: Litros
+      description: Litros totales acumulados que marca el contador de gasoil.
+      required: true
+      selector:
+        number:
+          min: 0
+          step: 0.01
+          unit_of_measurement: L
+          mode: box
+    timestamp:
+      name: Fecha y hora
+      description: >-
+        Momento de la lectura. Si se omite, se usa la hora actual. Si es una
+        fecha pasada, se consulta el historial del sensor de energía.
+      required: false
+      example: "2026-07-17T18:00:00+02:00"
+      selector:
+        datetime:
+    config_entry_id:
+      name: Instancia
+      description: >-
+        Instancia del estimador sobre la que aplicar la lectura. Opcional si
+        solo hay una configurada.
+      required: false
+      selector:
+        config_entry:
+          integration: gasoil_consumption_estimator
+
+reset_calibration:
+  name: Reiniciar calibración
+  description: Borra todas las lecturas manuales y reinicia el ratio al valor inicial.
+  fields:
+    config_entry_id:
+      name: Instancia
+      description: >-
+        Instancia del estimador a reiniciar. Opcional si solo hay una
+        configurada.
+      required: false
+      selector:
+        config_entry:
+          integration: gasoil_consumption_estimator

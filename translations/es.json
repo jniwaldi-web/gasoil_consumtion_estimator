@@ -1,0 +1,75 @@
+{
+  "title": "Estimador de consumo de gasoil",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar el estimador de gasoil",
+        "description": "Selecciona el sensor de energía acumulada (kWh) de tu caldera y, opcionalmente, los datos iniciales del depósito.",
+        "data": {
+          "energy_sensor": "Sensor de energía (kWh)",
+          "name": "Nombre de la instancia",
+          "tank_capacity": "Capacidad del depósito (L)",
+          "initial_liters": "Lectura inicial del contador (L)",
+          "initial_timestamp": "Fecha/hora de la lectura inicial",
+          "initial_ratio": "Ratio inicial (L/kWh)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones del estimador de gasoil",
+        "description": "Ajusta el sensor de energía, el nombre, la capacidad del depósito y el ratio inicial.",
+        "data": {
+          "energy_sensor": "Sensor de energía (kWh)",
+          "name": "Nombre de la instancia",
+          "tank_capacity": "Capacidad del depósito (L)",
+          "initial_ratio": "Ratio inicial (L/kWh)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "estimated_gasoil_consumed": { "name": "Gasoil consumido estimado" },
+      "estimated_gasoil_since_last_reading": { "name": "Gasoil consumido desde la última lectura" },
+      "gasoil_liters_per_kwh": { "name": "Ratio gasoil (L/kWh)" },
+      "last_gasoil_manual_reading": { "name": "Última lectura manual de gasoil" },
+      "last_gasoil_reading_time": { "name": "Fecha de la última lectura" },
+      "current_energy_kwh": { "name": "Energía actual (kWh)" },
+      "estimated_gasoil_remaining": { "name": "Gasoil restante estimado" },
+      "estimated_tank_percentage": { "name": "Porcentaje estimado del depósito" }
+    }
+  },
+  "services": {
+    "add_manual_reading": {
+      "name": "Añadir lectura manual de gasoil",
+      "description": "Registra los litros que marca el contador de gasoil en un momento dado y recalibra la estimación.",
+      "fields": {
+        "liters": {
+          "name": "Litros",
+          "description": "Litros totales acumulados que marca el contador de gasoil."
+        },
+        "timestamp": {
+          "name": "Fecha y hora",
+          "description": "Momento de la lectura. Si se omite, se usa la hora actual. Si es pasada, se consulta el historial del sensor de energía."
+        },
+        "config_entry_id": {
+          "name": "Instancia",
+          "description": "Instancia del estimador. Opcional si solo hay una configurada."
+        }
+      }
+    },
+    "reset_calibration": {
+      "name": "Reiniciar calibración",
+      "description": "Borra todas las lecturas manuales y reinicia el ratio al valor inicial.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Instancia",
+          "description": "Instancia del estimador a reiniciar. Opcional si solo hay una configurada."
+        }
+      }
+    }
+  }
+}

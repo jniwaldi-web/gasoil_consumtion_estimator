@@ -1,0 +1,13 @@
+{
+  "domain": "gasoil_consumption_estimator",
+  "name": "Estimador de consumo de gasoil",
+  "version": "0.1.0",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/example/gasoil_consumption_estimator",
+  "issue_tracker": "https://github.com/example/gasoil_consumption_estimator/issues",
+  "integration_type": "device",
+  "iot_class": "calculated",
+  "dependencies": ["recorder"],
+  "requirements": []
+}
